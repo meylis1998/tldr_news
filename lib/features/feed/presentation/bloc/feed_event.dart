@@ -8,7 +8,7 @@ abstract class FeedEvent extends Equatable {
 }
 
 class FeedLoadRequested extends FeedEvent {
-  const FeedLoadRequested({this.category = 'tech'});
+  const FeedLoadRequested({this.category = 'all'});
 
   final String category;
 

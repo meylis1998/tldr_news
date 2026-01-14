@@ -108,6 +108,7 @@ class _CategoryChipsState extends State<CategoryChips> {
 
   Color _getCategoryColor(int index) {
     final colors = [
+      const Color(0xFFFFD700),  // all (gold)
       AppColors.primary,        // tech
       const Color(0xFF8B5CF6),  // ai
       const Color(0xFF3B82F6),  // webdev

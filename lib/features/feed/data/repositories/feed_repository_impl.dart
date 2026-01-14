@@ -62,6 +62,76 @@ class FeedRepositoryImpl implements FeedRepository {
   }
 
   @override
+  Future<Either<Failure, Map<String, List<Article>>>> getAllArticlesGrouped({
+    bool forceRefresh = false,
+  }) async {
+    final isConnected = await _networkInfo.isConnected;
+    final groupedArticles = <String, List<Article>>{};
+
+    if (isConnected) {
+      try {
+        // Fetch all newsletters in parallel
+        final futures = ApiConstants.categorySlugs.map((slug) async {
+          try {
+            final articles = await _remoteDataSource.getArticles(slug);
+            await _localDataSource.saveArticles(slug, articles);
+            return MapEntry(slug, articles.map((m) => m.toEntity()).toList());
+          } catch (e) {
+            // If one feed fails, try to get from cache
+            final cached = await _localDataSource.getArticles(slug);
+            return MapEntry(slug, cached.map((m) => m.toEntity()).toList());
+          }
+        });
+
+        final results = await Future.wait(futures);
+
+        for (final entry in results) {
+          if (entry.value.isNotEmpty) {
+            groupedArticles[entry.key] = entry.value;
+          }
+        }
+
+        if (groupedArticles.isEmpty) {
+          return const Left(
+            ServerFailure(message: 'Failed to fetch any articles'),
+          );
+        }
+
+        return Right(groupedArticles);
+      } catch (e) {
+        return Left(UnknownFailure(message: e.toString()));
+      }
+    } else {
+      // Offline: get all cached articles
+      return _getAllLocalArticlesGrouped();
+    }
+  }
+
+  Future<Either<Failure, Map<String, List<Article>>>>
+      _getAllLocalArticlesGrouped() async {
+    try {
+      final groupedArticles = <String, List<Article>>{};
+
+      for (final slug in ApiConstants.categorySlugs) {
+        final localArticles = await _localDataSource.getArticles(slug);
+        if (localArticles.isNotEmpty) {
+          groupedArticles[slug] = localArticles.map((m) => m.toEntity()).toList();
+        }
+      }
+
+      if (groupedArticles.isEmpty) {
+        return const Left(
+          NetworkFailure(message: 'No internet connection and no cached data'),
+        );
+      }
+
+      return Right(groupedArticles);
+    } on CacheException catch (e) {
+      return Left(CacheFailure(message: e.message));
+    }
+  }
+
+  @override
   Future<Either<Failure, Article>> getArticleById(String id) async {
     try {
       final article = await _localDataSource.getArticleById(id);

@@ -12,6 +12,7 @@ import 'package:tldr_news/features/feed/presentation/bloc/feed_bloc.dart';
 import 'package:tldr_news/features/feed/presentation/widgets/article_list.dart';
 import 'package:tldr_news/features/feed/presentation/widgets/category_chips.dart';
 import 'package:tldr_news/features/feed/presentation/widgets/feed_shimmer.dart';
+import 'package:tldr_news/features/feed/presentation/widgets/grouped_article_list.dart';
 import 'package:tldr_news/shared/widgets/empty_state_widget.dart';
 import 'package:tldr_news/shared/widgets/error_widget.dart';
 
@@ -155,21 +156,48 @@ class _FeedPageState extends State<FeedPage> {
                 FeedLoadRequested(category: state.selectedCategory),
               ),
         ),
-      FeedStatus.loaded => state.articles.isEmpty
-          ? const EmptyStateWidget(
-              title: 'No articles',
-              message: 'No articles found in this category',
-              icon: Icons.article_outlined,
-            )
-          : ArticleList(
-              articles: state.articles,
-              onArticleTap: (article) => _onArticleTap(context, article),
-              onBookmarkTap: (article) => _onBookmarkTap(context, article),
-              onRefresh: () async {
-                context.read<FeedBloc>().add(const FeedRefreshRequested());
-              },
-            ),
+      FeedStatus.loaded => state.isAllCategory
+          ? _buildGroupedContent(context, state)
+          : _buildSingleCategoryContent(context, state),
     };
+  }
+
+  Widget _buildGroupedContent(BuildContext context, FeedState state) {
+    if (state.groupedArticles.isEmpty) {
+      return const EmptyStateWidget(
+        title: 'No articles',
+        message: 'No articles found',
+        icon: Icons.article_outlined,
+      );
+    }
+
+    return GroupedArticleList(
+      groupedArticles: state.groupedArticles,
+      onArticleTap: (article) => _onArticleTap(context, article),
+      onBookmarkTap: (article) => _onBookmarkTap(context, article),
+      onRefresh: () async {
+        context.read<FeedBloc>().add(const FeedRefreshRequested());
+      },
+    );
+  }
+
+  Widget _buildSingleCategoryContent(BuildContext context, FeedState state) {
+    if (state.articles.isEmpty) {
+      return const EmptyStateWidget(
+        title: 'No articles',
+        message: 'No articles found in this category',
+        icon: Icons.article_outlined,
+      );
+    }
+
+    return ArticleList(
+      articles: state.articles,
+      onArticleTap: (article) => _onArticleTap(context, article),
+      onBookmarkTap: (article) => _onBookmarkTap(context, article),
+      onRefresh: () async {
+        context.read<FeedBloc>().add(const FeedRefreshRequested());
+      },
+    );
   }
 
   void _onArticleTap(BuildContext context, Article article) {

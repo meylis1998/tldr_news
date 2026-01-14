@@ -15,8 +15,16 @@ abstract class ApiConstants {
   static const Duration connectTimeout = Duration(seconds: 30);
   static const Duration receiveTimeout = Duration(seconds: 30);
 
-  // All 14 TLDR newsletters with subscriber counts
+  // "All" special category + 12 TLDR newsletters
   static const List<NewsletterCategory> newsletters = [
+    NewsletterCategory(
+      slug: 'all',
+      name: 'All',
+      description: 'All newsletters combined',
+      subscribers: '7M+',
+      emoji: '🌟',
+      isAggregate: true,
+    ),
     NewsletterCategory(
       slug: 'tech',
       name: 'Tech',
@@ -104,7 +112,7 @@ abstract class ApiConstants {
   ];
 
   static List<String> get categorySlugs =>
-      newsletters.map((n) => n.slug).toList();
+      newsletters.where((n) => !n.isAggregate).map((n) => n.slug).toList();
 
   static NewsletterCategory? getCategory(String slug) {
     try {
@@ -122,6 +130,7 @@ class NewsletterCategory {
     required this.description,
     required this.emoji,
     this.subscribers,
+    this.isAggregate = false,
   });
 
   final String slug;
@@ -129,4 +138,10 @@ class NewsletterCategory {
   final String description;
   final String emoji;
   final String? subscribers;
+  final bool isAggregate;
+}
+
+extension ApiConstantsX on ApiConstants {
+  static List<NewsletterCategory> get feedNewsletters =>
+      ApiConstants.newsletters.where((n) => !n.isAggregate).toList();
 }

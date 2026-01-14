@@ -8,6 +8,11 @@ abstract class FeedRepository {
     bool forceRefresh = false,
   });
 
+  /// Fetches articles from all newsletters in parallel and groups by category
+  Future<Either<Failure, Map<String, List<Article>>>> getAllArticlesGrouped({
+    bool forceRefresh = false,
+  });
+
   Future<Either<Failure, Article>> getArticleById(String id);
 
   Future<Either<Failure, List<Article>>> searchArticles(String query);

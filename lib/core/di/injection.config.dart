@@ -84,12 +84,16 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i965.GetArticles>(
       () => _i965.GetArticles(gh<_i430.FeedRepository>()),
     );
+    gh.factory<_i774.FeedBloc>(
+      () => _i774.FeedBloc(
+        gh<_i965.GetArticles>(),
+        gh<_i430.FeedRepository>(),
+        gh<_i932.NetworkInfo>(),
+      ),
+    );
     gh.lazySingleton<_i1047.BookmarksRepository>(
       () =>
           _i1013.BookmarksRepositoryImpl(gh<_i647.BookmarksLocalDataSource>()),
-    );
-    gh.factory<_i774.FeedBloc>(
-      () => _i774.FeedBloc(gh<_i965.GetArticles>(), gh<_i932.NetworkInfo>()),
     );
     gh.factory<_i552.SearchBloc>(
       () => _i552.SearchBloc(

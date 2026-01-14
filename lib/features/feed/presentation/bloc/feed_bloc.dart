@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 import 'package:tldr_news/core/network/network_info.dart';
 import 'package:tldr_news/features/feed/domain/entities/article.dart';
+import 'package:tldr_news/features/feed/domain/repositories/feed_repository.dart';
 import 'package:tldr_news/features/feed/domain/usecases/get_articles.dart';
 
 part 'feed_event.dart';
@@ -10,7 +11,8 @@ part 'feed_state.dart';
 
 @injectable
 class FeedBloc extends Bloc<FeedEvent, FeedState> {
-  FeedBloc(this._getArticles, this._networkInfo) : super(const FeedState()) {
+  FeedBloc(this._getArticles, this._feedRepository, this._networkInfo)
+      : super(const FeedState()) {
     on<FeedLoadRequested>(_onLoadRequested);
     on<FeedRefreshRequested>(_onRefreshRequested);
     on<FeedCategoryChanged>(_onCategoryChanged);
@@ -18,12 +20,13 @@ class FeedBloc extends Bloc<FeedEvent, FeedState> {
 
     _networkInfo.onConnectivityChanged.listen((isConnected) {
       if (isConnected && state.isOffline) {
-        add(FeedRefreshRequested());
+        add(const FeedRefreshRequested());
       }
     });
   }
 
   final GetArticles _getArticles;
+  final FeedRepository _feedRepository;
   final NetworkInfo _networkInfo;
 
   Future<void> _onLoadRequested(
@@ -33,25 +36,46 @@ class FeedBloc extends Bloc<FeedEvent, FeedState> {
     emit(state.copyWith(status: FeedStatus.loading));
 
     final isConnected = await _networkInfo.isConnected;
-    final result = await _getArticles(category: event.category);
 
-    result.fold(
-      (failure) => emit(
-        state.copyWith(
-          status: FeedStatus.error,
-          errorMessage: failure.message,
-          isOffline: !isConnected,
+    if (event.category == 'all') {
+      final result = await _feedRepository.getAllArticlesGrouped();
+      result.fold(
+        (failure) => emit(
+          state.copyWith(
+            status: FeedStatus.error,
+            errorMessage: failure.message,
+            isOffline: !isConnected,
+          ),
         ),
-      ),
-      (articles) => emit(
-        state.copyWith(
-          status: FeedStatus.loaded,
-          articles: articles,
-          selectedCategory: event.category,
-          isOffline: !isConnected,
+        (grouped) => emit(
+          state.copyWith(
+            status: FeedStatus.loaded,
+            groupedArticles: grouped,
+            selectedCategory: event.category,
+            isOffline: !isConnected,
+          ),
         ),
-      ),
-    );
+      );
+    } else {
+      final result = await _getArticles(category: event.category);
+      result.fold(
+        (failure) => emit(
+          state.copyWith(
+            status: FeedStatus.error,
+            errorMessage: failure.message,
+            isOffline: !isConnected,
+          ),
+        ),
+        (articles) => emit(
+          state.copyWith(
+            status: FeedStatus.loaded,
+            articles: articles,
+            selectedCategory: event.category,
+            isOffline: !isConnected,
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _onRefreshRequested(
@@ -59,27 +83,48 @@ class FeedBloc extends Bloc<FeedEvent, FeedState> {
     Emitter<FeedState> emit,
   ) async {
     final isConnected = await _networkInfo.isConnected;
-    final result = await _getArticles(
-      category: state.selectedCategory,
-      forceRefresh: true,
-    );
 
-    result.fold(
-      (failure) => emit(
-        state.copyWith(
-          errorMessage: failure.message,
-          isOffline: !isConnected,
+    if (state.isAllCategory) {
+      final result =
+          await _feedRepository.getAllArticlesGrouped(forceRefresh: true);
+      result.fold(
+        (failure) => emit(
+          state.copyWith(
+            errorMessage: failure.message,
+            isOffline: !isConnected,
+          ),
         ),
-      ),
-      (articles) => emit(
-        state.copyWith(
-          status: FeedStatus.loaded,
-          articles: articles,
-          isOffline: !isConnected,
-          errorMessage: null,
+        (grouped) => emit(
+          state.copyWith(
+            status: FeedStatus.loaded,
+            groupedArticles: grouped,
+            isOffline: !isConnected,
+            errorMessage: null,
+          ),
         ),
-      ),
-    );
+      );
+    } else {
+      final result = await _getArticles(
+        category: state.selectedCategory,
+        forceRefresh: true,
+      );
+      result.fold(
+        (failure) => emit(
+          state.copyWith(
+            errorMessage: failure.message,
+            isOffline: !isConnected,
+          ),
+        ),
+        (articles) => emit(
+          state.copyWith(
+            status: FeedStatus.loaded,
+            articles: articles,
+            isOffline: !isConnected,
+            errorMessage: null,
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _onCategoryChanged(
@@ -94,24 +139,44 @@ class FeedBloc extends Bloc<FeedEvent, FeedState> {
     ));
 
     final isConnected = await _networkInfo.isConnected;
-    final result = await _getArticles(category: event.category);
 
-    result.fold(
-      (failure) => emit(
-        state.copyWith(
-          status: FeedStatus.error,
-          errorMessage: failure.message,
-          isOffline: !isConnected,
+    if (event.category == 'all') {
+      final result = await _feedRepository.getAllArticlesGrouped();
+      result.fold(
+        (failure) => emit(
+          state.copyWith(
+            status: FeedStatus.error,
+            errorMessage: failure.message,
+            isOffline: !isConnected,
+          ),
         ),
-      ),
-      (articles) => emit(
-        state.copyWith(
-          status: FeedStatus.loaded,
-          articles: articles,
-          isOffline: !isConnected,
+        (grouped) => emit(
+          state.copyWith(
+            status: FeedStatus.loaded,
+            groupedArticles: grouped,
+            isOffline: !isConnected,
+          ),
         ),
-      ),
-    );
+      );
+    } else {
+      final result = await _getArticles(category: event.category);
+      result.fold(
+        (failure) => emit(
+          state.copyWith(
+            status: FeedStatus.error,
+            errorMessage: failure.message,
+            isOffline: !isConnected,
+          ),
+        ),
+        (articles) => emit(
+          state.copyWith(
+            status: FeedStatus.loaded,
+            articles: articles,
+            isOffline: !isConnected,
+          ),
+        ),
+      );
+    }
   }
 
   void _onArticleRead(
