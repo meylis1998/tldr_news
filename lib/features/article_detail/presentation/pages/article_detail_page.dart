@@ -101,9 +101,11 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
               );
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.share),
-            onPressed: () => _shareArticle(article),
+          Builder(
+            builder: (context) => IconButton(
+              icon: const Icon(Icons.share),
+              onPressed: () => _shareArticle(context, article),
+            ),
           ),
         ],
       ),
@@ -189,10 +191,14 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
     }
   }
 
-  Future<void> _shareArticle(Article article) async {
+  Future<void> _shareArticle(BuildContext context, Article article) async {
+    final box = context.findRenderObject() as RenderBox?;
     await Share.share(
       '${article.title}\n\n${article.link}',
       subject: article.title,
+      sharePositionOrigin: box != null
+          ? box.localToGlobal(Offset.zero) & box.size
+          : null,
     );
   }
 

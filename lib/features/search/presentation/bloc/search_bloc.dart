@@ -55,28 +55,30 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
 
     final result = await _repository.searchArticles(state.query);
 
-    result.fold(
-      (failure) => emit(state.copyWith(
+    if (result.isLeft()) {
+      final failure = result.fold((l) => l, (r) => throw StateError('unreachable'));
+      emit(state.copyWith(
         status: SearchStatus.error,
         errorMessage: failure.message,
-      )),
-      (articles) async {
-        emit(state.copyWith(
-          status: SearchStatus.loaded,
-          results: articles,
-        ));
+      ));
+      return;
+    }
 
-        final recentSearches = [...state.recentSearches];
-        if (!recentSearches.contains(state.query)) {
-          recentSearches.insert(0, state.query);
-          if (recentSearches.length > AppConstants.maxRecentSearches) {
-            recentSearches.removeLast();
-          }
-          await _localStorage.saveRecentSearches(recentSearches);
-          emit(state.copyWith(recentSearches: recentSearches));
-        }
-      },
-    );
+    final articles = result.fold((l) => throw StateError('unreachable'), (r) => r);
+    emit(state.copyWith(
+      status: SearchStatus.loaded,
+      results: articles,
+    ));
+
+    final recentSearches = [...state.recentSearches];
+    if (!recentSearches.contains(state.query)) {
+      recentSearches.insert(0, state.query);
+      if (recentSearches.length > AppConstants.maxRecentSearches) {
+        recentSearches.removeLast();
+      }
+      await _localStorage.saveRecentSearches(recentSearches);
+      emit(state.copyWith(recentSearches: recentSearches));
+    }
   }
 
   void _onSearchCleared(
