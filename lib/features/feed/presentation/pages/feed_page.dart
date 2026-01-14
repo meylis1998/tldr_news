@@ -80,7 +80,7 @@ class _FeedPageState extends State<FeedPage> {
             ),
             SizedBox(width: 8.w),
             Text(
-              'TLDR',
+              'TLDR.TECH',
               style: AppTextStyles.headlineSmall.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -156,13 +156,21 @@ class _FeedPageState extends State<FeedPage> {
                 FeedLoadRequested(category: state.selectedCategory),
               ),
         ),
-      FeedStatus.loaded => state.isAllCategory
-          ? _buildGroupedContent(context, state)
-          : _buildSingleCategoryContent(context, state),
+      FeedStatus.loaded => BlocBuilder<BookmarksBloc, BookmarksState>(
+          builder: (context, bookmarksState) {
+            return state.isAllCategory
+                ? _buildGroupedContent(context, state, bookmarksState)
+                : _buildSingleCategoryContent(context, state, bookmarksState);
+          },
+        ),
     };
   }
 
-  Widget _buildGroupedContent(BuildContext context, FeedState state) {
+  Widget _buildGroupedContent(
+    BuildContext context,
+    FeedState state,
+    BookmarksState bookmarksState,
+  ) {
     if (state.groupedArticles.isEmpty) {
       return const EmptyStateWidget(
         title: 'No articles',
@@ -171,8 +179,20 @@ class _FeedPageState extends State<FeedPage> {
       );
     }
 
+    // Merge bookmark status with grouped articles
+    final mergedGroupedArticles = state.groupedArticles.map(
+      (category, articles) => MapEntry(
+        category,
+        articles
+            .map((a) => a.copyWith(
+                  isBookmarked: bookmarksState.isBookmarked(a.id),
+                ))
+            .toList(),
+      ),
+    );
+
     return GroupedArticleList(
-      groupedArticles: state.groupedArticles,
+      groupedArticles: mergedGroupedArticles,
       onArticleTap: (article) => _onArticleTap(context, article),
       onBookmarkTap: (article) => _onBookmarkTap(context, article),
       onRefresh: () async {
@@ -181,7 +201,11 @@ class _FeedPageState extends State<FeedPage> {
     );
   }
 
-  Widget _buildSingleCategoryContent(BuildContext context, FeedState state) {
+  Widget _buildSingleCategoryContent(
+    BuildContext context,
+    FeedState state,
+    BookmarksState bookmarksState,
+  ) {
     if (state.articles.isEmpty) {
       return const EmptyStateWidget(
         title: 'No articles',
@@ -190,8 +214,15 @@ class _FeedPageState extends State<FeedPage> {
       );
     }
 
+    // Merge bookmark status with articles
+    final mergedArticles = state.articles
+        .map((a) => a.copyWith(
+              isBookmarked: bookmarksState.isBookmarked(a.id),
+            ))
+        .toList();
+
     return ArticleList(
-      articles: state.articles,
+      articles: mergedArticles,
       onArticleTap: (article) => _onArticleTap(context, article),
       onBookmarkTap: (article) => _onBookmarkTap(context, article),
       onRefresh: () async {
@@ -206,10 +237,13 @@ class _FeedPageState extends State<FeedPage> {
   }
 
   void _onBookmarkTap(BuildContext context, Article article) {
-    if (article.isBookmarked) {
-      context.read<BookmarksBloc>().add(BookmarkRemoved(article.id));
+    final bookmarksBloc = context.read<BookmarksBloc>();
+    final isBookmarked = bookmarksBloc.state.isBookmarked(article.id);
+
+    if (isBookmarked) {
+      bookmarksBloc.add(BookmarkRemoved(article.id));
     } else {
-      context.read<BookmarksBloc>().add(BookmarkAdded(article));
+      bookmarksBloc.add(BookmarkAdded(article));
     }
   }
 }

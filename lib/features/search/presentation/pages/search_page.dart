@@ -139,15 +139,21 @@ class _SearchPageContentState extends State<_SearchPageContent> {
   }
 
   Widget _buildSearchResults(BuildContext context, List<Article> results) {
-    return ListView.builder(
-      padding: EdgeInsets.only(top: 8.h, bottom: 24.h),
-      itemCount: results.length,
-      itemBuilder: (context, index) {
-        final article = results[index];
-        return ArticleCard(
-          article: article,
-          onTap: () => _onArticleTap(context, article),
-          onBookmarkTap: () => _onBookmarkTap(context, article),
+    return BlocBuilder<BookmarksBloc, BookmarksState>(
+      builder: (context, bookmarksState) {
+        return ListView.builder(
+          padding: EdgeInsets.only(top: 8.h, bottom: 24.h),
+          itemCount: results.length,
+          itemBuilder: (context, index) {
+            final article = results[index].copyWith(
+              isBookmarked: bookmarksState.isBookmarked(results[index].id),
+            );
+            return ArticleCard(
+              article: article,
+              onTap: () => _onArticleTap(context, article),
+              onBookmarkTap: () => _onBookmarkTap(context, article),
+            );
+          },
         );
       },
     );
