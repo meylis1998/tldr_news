@@ -1,4 +1,4 @@
-package com.tldr.tldr_news
+package tech.tldr.app
 
 import io.flutter.embedding.android.FlutterActivity
 
