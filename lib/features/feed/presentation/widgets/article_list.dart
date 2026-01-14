@@ -35,7 +35,7 @@ class ArticleList extends StatelessWidget {
     );
 
     if (onRefresh != null) {
-      listView = RefreshIndicator(
+      listView = RefreshIndicator.adaptive(
         onRefresh: onRefresh!,
         child: listView,
       );

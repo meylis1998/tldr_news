@@ -27,7 +27,7 @@ class GroupedArticleList extends StatelessWidget {
         .where((slug) => groupedArticles.containsKey(slug))
         .toList();
 
-    return RefreshIndicator(
+    return RefreshIndicator.adaptive(
       onRefresh: onRefresh,
       child: ListView.builder(
         padding: EdgeInsets.only(top: 8.h, bottom: 16.h),

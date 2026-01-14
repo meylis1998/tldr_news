@@ -195,9 +195,7 @@ class _FeedPageState extends State<FeedPage> {
       groupedArticles: mergedGroupedArticles,
       onArticleTap: (article) => _onArticleTap(context, article),
       onBookmarkTap: (article) => _onBookmarkTap(context, article),
-      onRefresh: () async {
-        context.read<FeedBloc>().add(const FeedRefreshRequested());
-      },
+      onRefresh: () => context.read<FeedBloc>().refresh(),
     );
   }
 
@@ -225,9 +223,7 @@ class _FeedPageState extends State<FeedPage> {
       articles: mergedArticles,
       onArticleTap: (article) => _onArticleTap(context, article),
       onBookmarkTap: (article) => _onBookmarkTap(context, article),
-      onRefresh: () async {
-        context.read<FeedBloc>().add(const FeedRefreshRequested());
-      },
+      onRefresh: () => context.read<FeedBloc>().refresh(),
     );
   }
 

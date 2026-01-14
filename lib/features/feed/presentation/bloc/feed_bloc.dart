@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
@@ -28,6 +30,16 @@ class FeedBloc extends Bloc<FeedEvent, FeedState> {
   final GetArticles _getArticles;
   final FeedRepository _feedRepository;
   final NetworkInfo _networkInfo;
+
+  Completer<void>? _refreshCompleter;
+
+  /// Triggers a refresh and returns a Future that completes when done.
+  /// Use this with RefreshIndicator.onRefresh.
+  Future<void> refresh() {
+    _refreshCompleter = Completer<void>();
+    add(const FeedRefreshRequested());
+    return _refreshCompleter!.future;
+  }
 
   Future<void> _onLoadRequested(
     FeedLoadRequested event,
@@ -82,6 +94,13 @@ class FeedBloc extends Bloc<FeedEvent, FeedState> {
     FeedRefreshRequested event,
     Emitter<FeedState> emit,
   ) async {
+    // Clear content and show loading shimmer
+    emit(state.copyWith(
+      status: FeedStatus.loading,
+      articles: const [],
+      groupedArticles: const {},
+    ));
+
     final isConnected = await _networkInfo.isConnected;
 
     if (state.isAllCategory) {
@@ -125,6 +144,10 @@ class FeedBloc extends Bloc<FeedEvent, FeedState> {
         ),
       );
     }
+
+    // Complete the refresh completer
+    _refreshCompleter?.complete();
+    _refreshCompleter = null;
   }
 
   Future<void> _onCategoryChanged(
