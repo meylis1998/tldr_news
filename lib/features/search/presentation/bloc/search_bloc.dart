@@ -1,4 +1,4 @@
-import 'dart:async';
+import 'dart:async' show Timer, unawaited;
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -55,6 +55,9 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
 
     final result = await _repository.searchArticles(state.query);
 
+    // Check if handler is still active after async operation
+    if (emit.isDone) return;
+
     if (result.isLeft()) {
       final failure = result.fold((l) => l, (r) => throw StateError('unreachable'));
       emit(state.copyWith(
@@ -70,14 +73,17 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
       results: articles,
     ));
 
+    // Save recent search in background (don't emit after async)
     final recentSearches = [...state.recentSearches];
     if (!recentSearches.contains(state.query)) {
       recentSearches.insert(0, state.query);
       if (recentSearches.length > AppConstants.maxRecentSearches) {
         recentSearches.removeLast();
       }
-      await _localStorage.saveRecentSearches(recentSearches);
+      // Update state synchronously first, then save
       emit(state.copyWith(recentSearches: recentSearches));
+      // Save to storage without awaiting
+      unawaited(_localStorage.saveRecentSearches(recentSearches));
     }
   }
 

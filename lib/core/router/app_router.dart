@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tldr_news/features/article_detail/presentation/pages/article_detail_page.dart';
 import 'package:tldr_news/features/bookmarks/presentation/pages/bookmarks_page.dart';
+import 'package:tldr_news/features/feed/domain/entities/article.dart';
 import 'package:tldr_news/features/feed/presentation/pages/feed_page.dart';
 import 'package:tldr_news/features/search/presentation/pages/search_page.dart';
 import 'package:tldr_news/features/settings/presentation/pages/settings_page.dart';
@@ -51,7 +52,8 @@ final GoRouter appRouter = GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) {
         final articleId = state.pathParameters['id'] ?? '';
-        return ArticleDetailPage(articleId: articleId);
+        final article = state.extra as Article?;
+        return ArticleDetailPage(articleId: articleId, article: article);
       },
     ),
     GoRoute(

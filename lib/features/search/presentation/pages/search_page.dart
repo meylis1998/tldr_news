@@ -160,7 +160,7 @@ class _SearchPageContentState extends State<_SearchPageContent> {
   }
 
   void _onArticleTap(BuildContext context, Article article) {
-    context.push('/article/${article.id}');
+    context.push('/article/${article.id}', extra: article);
   }
 
   void _onBookmarkTap(BuildContext context, Article article) {

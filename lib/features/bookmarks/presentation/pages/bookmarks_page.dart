@@ -47,7 +47,7 @@ class BookmarksPage extends StatelessWidget {
   }
 
   void _onArticleTap(BuildContext context, Article article) {
-    context.push('/article/${article.id}');
+    context.push('/article/${article.id}', extra: article);
   }
 
   void _onRemoveBookmark(BuildContext context, Article article) {

@@ -51,10 +51,28 @@ class ArticleContent extends StatelessWidget {
           ],
         ),
         SizedBox(height: 16.h),
-        Text(
-          article.title,
-          style: AppTextStyles.headlineMedium.copyWith(
-            color: colorScheme.onSurface,
+        Hero(
+          tag: 'article-title-${article.id}',
+          flightShuttleBuilder: (_, animation, direction, fromContext, toContext) {
+            final toWidget = toContext.widget as Hero;
+            return DefaultTextStyle(
+              style: AppTextStyles.headlineMedium.copyWith(
+                color: colorScheme.onSurface,
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: toWidget.child,
+              ),
+            );
+          },
+          child: Material(
+            color: Colors.transparent,
+            child: Text(
+              article.title,
+              style: AppTextStyles.headlineMedium.copyWith(
+                color: colorScheme.onSurface,
+              ),
+            ),
           ),
         ),
         SizedBox(height: 16.h),

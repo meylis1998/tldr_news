@@ -14,9 +14,14 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 class ArticleDetailPage extends StatefulWidget {
-  const ArticleDetailPage({required this.articleId, super.key});
+  const ArticleDetailPage({
+    required this.articleId,
+    this.article,
+    super.key,
+  });
 
   final String articleId;
+  final Article? article;
 
   @override
   State<ArticleDetailPage> createState() => _ArticleDetailPageState();
@@ -32,7 +37,13 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
   @override
   void initState() {
     super.initState();
-    _loadArticle();
+    // Use passed article if available (enables Hero animation)
+    if (widget.article != null) {
+      _article = widget.article;
+      _isLoading = false;
+    } else {
+      _loadArticle();
+    }
     _initWebView();
   }
 
@@ -192,13 +203,26 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
   }
 
   Future<void> _shareArticle(BuildContext context, Article article) async {
-    final box = context.findRenderObject() as RenderBox?;
+    // Get the scaffold render box for proper iPad share popover positioning
+    final scaffoldContext = Scaffold.maybeOf(context)?.context;
+    final box = scaffoldContext?.findRenderObject() as RenderBox?;
+
+    Rect? sharePositionOrigin;
+    if (box != null && box.hasSize) {
+      final size = box.size;
+      // Position at top-right corner where share button typically is
+      sharePositionOrigin = Rect.fromLTWH(
+        size.width - 50,
+        50,
+        1,
+        1,
+      );
+    }
+
     await Share.share(
       '${article.title}\n\n${article.link}',
       subject: article.title,
-      sharePositionOrigin: box != null
-          ? box.localToGlobal(Offset.zero) & box.size
-          : null,
+      sharePositionOrigin: sharePositionOrigin,
     );
   }
 

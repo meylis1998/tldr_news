@@ -3,10 +3,12 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:tldr_news/core/constants/api_constants.dart';
 import 'package:tldr_news/core/theme/app_colors.dart';
 import 'package:tldr_news/core/theme/app_text_styles.dart';
+import 'package:tldr_news/core/utils/animations.dart';
 import 'package:tldr_news/features/feed/domain/entities/article.dart';
 import 'package:tldr_news/features/feed/presentation/widgets/article_card.dart';
+import 'package:tldr_news/shared/widgets/custom_refresh_indicator.dart';
 
-class GroupedArticleList extends StatelessWidget {
+class GroupedArticleList extends StatefulWidget {
   const GroupedArticleList({
     required this.groupedArticles,
     required this.onArticleTap,
@@ -21,33 +23,144 @@ class GroupedArticleList extends StatelessWidget {
   final Future<void> Function() onRefresh;
 
   @override
+  State<GroupedArticleList> createState() => _GroupedArticleListState();
+}
+
+class _GroupedArticleListState extends State<GroupedArticleList> {
+  bool _shouldAnimate = true;
+
+  @override
+  void didUpdateWidget(GroupedArticleList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.groupedArticles != widget.groupedArticles) {
+      _shouldAnimate = true;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     // Sort categories by the order in ApiConstants
     final sortedCategories = ApiConstants.categorySlugs
-        .where((slug) => groupedArticles.containsKey(slug))
+        .where((slug) => widget.groupedArticles.containsKey(slug))
         .toList();
 
-    return RefreshIndicator.adaptive(
-      onRefresh: onRefresh,
+    return BrandedRefreshIndicator(
+      onRefresh: () async {
+        await widget.onRefresh();
+        if (mounted) {
+          setState(() => _shouldAnimate = true);
+        }
+      },
       child: ListView.builder(
         padding: EdgeInsets.only(top: 8.h, bottom: 16.h),
         itemCount: sortedCategories.length,
         itemBuilder: (context, index) {
           final category = sortedCategories[index];
-          final articles = groupedArticles[category] ?? [];
+          final articles = widget.groupedArticles[category] ?? [];
           final newsletter = ApiConstants.getCategory(category);
 
-          return _CategorySection(
+          Widget section = _CategorySection(
             category: category,
             emoji: newsletter?.emoji ?? '',
             name: newsletter?.name ?? category,
             articles: articles,
-            onArticleTap: onArticleTap,
-            onBookmarkTap: onBookmarkTap,
+            onArticleTap: widget.onArticleTap,
+            onBookmarkTap: widget.onBookmarkTap,
             colorIndex: ApiConstants.categorySlugs.indexOf(category),
           );
+
+          // Apply staggered animation for first 5 sections
+          if (_shouldAnimate && index < 5) {
+            return _StaggeredSection(
+              index: index,
+              child: section,
+            );
+          }
+
+          return section;
         },
       ),
+    );
+  }
+}
+
+class _StaggeredSection extends StatefulWidget {
+  const _StaggeredSection({
+    required this.index,
+    required this.child,
+  });
+
+  final int index;
+  final Widget child;
+
+  @override
+  State<_StaggeredSection> createState() => _StaggeredSectionState();
+}
+
+class _StaggeredSectionState extends State<_StaggeredSection>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _opacityAnimation;
+  late Animation<Offset> _slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    final delay = widget.index * 80;
+    final duration = 350 + delay;
+
+    _controller = AnimationController(
+      duration: Duration(milliseconds: duration),
+      vsync: this,
+    );
+
+    _opacityAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Interval(
+        delay / duration,
+        1.0,
+        curve: AppAnimations.entranceCurve,
+      ),
+    ));
+
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.08),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Interval(
+        delay / duration,
+        1.0,
+        curve: AppAnimations.entranceCurve,
+      ),
+    ));
+
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Opacity(
+          opacity: _opacityAnimation.value,
+          child: SlideTransition(
+            position: _slideAnimation,
+            child: child,
+          ),
+        );
+      },
+      child: widget.child,
     );
   }
 }

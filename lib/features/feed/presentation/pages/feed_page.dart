@@ -229,7 +229,7 @@ class _FeedPageState extends State<FeedPage> {
 
   void _onArticleTap(BuildContext context, Article article) {
     context.read<FeedBloc>().add(FeedArticleRead(article.id));
-    context.push('/article/${article.id}');
+    context.push('/article/${article.id}', extra: article);
   }
 
   void _onBookmarkTap(BuildContext context, Article article) {
