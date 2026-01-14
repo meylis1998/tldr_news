@@ -25,6 +25,7 @@ dependencies:
   # Networking & XML
   dio: ^5.9.0
   xml: ^6.5.0
+  html: ^0.15.5
   connectivity_plus: ^7.0.0
 
   # Storage

@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="tldr_news"
+        android:label="TLDR NEWS"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

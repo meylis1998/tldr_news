@@ -27,6 +27,7 @@ import '../../features/feed/data/datasources/feed_local_datasource.dart'
     as _i827;
 import '../../features/feed/data/datasources/feed_remote_datasource.dart'
     as _i1048;
+import '../../features/feed/data/datasources/newsletter_scraper.dart' as _i551;
 import '../../features/feed/data/repositories/feed_repository_impl.dart'
     as _i452;
 import '../../features/feed/domain/repositories/feed_repository.dart' as _i430;
@@ -56,8 +57,8 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i585.SettingsBloc>(() => _i585.SettingsBloc());
     gh.lazySingleton<_i895.Connectivity>(() => registerModule.connectivity);
     gh.lazySingleton<_i361.Dio>(() => dioModule.dio);
-    gh.lazySingleton<_i1048.FeedRemoteDataSource>(
-      () => _i1048.FeedRemoteDataSourceImpl(gh<_i361.Dio>()),
+    gh.lazySingleton<_i551.NewsletterScraper>(
+      () => _i551.NewsletterScraperImpl(gh<_i361.Dio>()),
     );
     gh.lazySingleton<_i329.LocalStorage>(
       () => _i329.LocalStorageImpl(gh<_i460.SharedPreferences>()),
@@ -70,6 +71,16 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i932.NetworkInfo>(
       () => _i932.NetworkInfoImpl(gh<_i895.Connectivity>()),
+    );
+    gh.lazySingleton<_i1048.FeedRemoteDataSource>(
+      () => _i1048.FeedRemoteDataSourceImpl(
+        gh<_i361.Dio>(),
+        gh<_i551.NewsletterScraper>(),
+      ),
+    );
+    gh.lazySingleton<_i1047.BookmarksRepository>(
+      () =>
+          _i1013.BookmarksRepositoryImpl(gh<_i647.BookmarksLocalDataSource>()),
     );
     gh.lazySingleton<_i430.FeedRepository>(
       () => _i452.FeedRepositoryImpl(
@@ -84,6 +95,9 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i965.GetArticles>(
       () => _i965.GetArticles(gh<_i430.FeedRepository>()),
     );
+    gh.factory<_i262.BookmarksBloc>(
+      () => _i262.BookmarksBloc(gh<_i1047.BookmarksRepository>()),
+    );
     gh.factory<_i774.FeedBloc>(
       () => _i774.FeedBloc(
         gh<_i965.GetArticles>(),
@@ -91,18 +105,11 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i932.NetworkInfo>(),
       ),
     );
-    gh.lazySingleton<_i1047.BookmarksRepository>(
-      () =>
-          _i1013.BookmarksRepositoryImpl(gh<_i647.BookmarksLocalDataSource>()),
-    );
     gh.factory<_i552.SearchBloc>(
       () => _i552.SearchBloc(
         gh<_i430.FeedRepository>(),
         gh<_i329.LocalStorage>(),
       ),
-    );
-    gh.factory<_i262.BookmarksBloc>(
-      () => _i262.BookmarksBloc(gh<_i1047.BookmarksRepository>()),
     );
     return this;
   }
